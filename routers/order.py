@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from crud import create_order, get_order, order_delete, get_dealer
+from crud import create_order, get_order, order_delete, get_dealer, get_orders
 from dependes import get_session
 from schemas import Order as OrderSchema, OrderCreate
 
@@ -18,8 +18,8 @@ async def get_order_endpoint(order_id: int, session: AsyncSession = Depends(get_
 
 @router.get("/orders", response_model=list[OrderSchema])
 async def get_orders_endpoint(session: AsyncSession = Depends(get_session)):
-    return await get_dealer()
-    (session)
+    return await get_orders(session)
+
 
 @router.delete("/order/{order_id}", response_model=OrderSchema)
 async def delete_order_endpoint(order_id: int, session: AsyncSession = Depends(get_session)):

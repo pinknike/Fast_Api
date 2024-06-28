@@ -1,19 +1,28 @@
-import os
-import sys
+import asyncio
 
 import pytest
+
 from httpx import AsyncClient
 from main import app, get_db
-from tests.test_crud import TestingSessionLocal, engine, Base
+from tests.test_dealer import TestingSessionLocal, engine, Base
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
+def event_loop():
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+@pytest.fixture(scope="session")
 async def test_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield TestingSessionLocal
+    yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-@pytest.fixture(scope="function")
+
+
+# Фикстура для клиента
+@pytest.fixture
 async def client(test_db):
     async def override_get_db():
         async with TestingSessionLocal() as session:
@@ -23,13 +32,16 @@ async def client(test_db):
         yield ac
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 async def new_dealer(client):
     response = await client.post("/api/v1/dealer", json={"name": "john johnes"})
     assert response.status_code == 200
     return response.json()
 
-@pytest.fixture(scope="function")
-async def session(test_db):
-    async with test_db() as session:
-        yield session
+@pytest.fixture
+async def new_order(client):
+    response = await client.post("/api/v1/order", json={"dealer_id":1})
+    assert response.status_code == 200
+    return response.json()
+
+
